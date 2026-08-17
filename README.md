@@ -33,7 +33,7 @@
 
 ## Overview
 
-lainOS Layer 03 is the next generation of the lainOS operating system. It preserves the hardened, privacy-first but daily drivable runtime of layer 02 while migrating the foundation from Arch Linux to Gentoo.
+lainOS Layer 03 is the next generation of the lainOS operating system. It preserves the hardened, privacy-first but daily drivable runtime of layer 02 while migrating the foundation from Arch Linux to Gentoo, with a new modular 4 layer OpenRC process isolation/containment stack.
 
 The result is a system where security policy is defined **before compilation**, not applied after installation. Compiler hardening, dependency selection, USE flag policy, and service architecture are all properties of the build system. Every official release is a pre-built SquashFS image produced by a deterministic pipeline ~ your installed system is identical to the one tested by the maintainer.
 
@@ -176,6 +176,115 @@ BIOS/UEFI ~ GRUB ~ kernel + initramfs
 - **Landlock backstop** ~ LSM-level path restriction that holds even if a process escapes its mount namespace
 - **Complements AppArmor** ~ namespaces and Landlock restrict *what*/*where* at runtime; AppArmor restricts *where* via boot-loaded MAC policy
 - **PID namespace control** ~ `rc_unshare_pid="YES"` (default, foreground required) or `"NO"` (host PID namespace for services requiring host PID visibility)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                         OpenRC Service Layer                            │
+│                                                                         │
+│   /etc/init.d/<service>          /etc/conf.d/<service>                  │
+│   ─────────────────────          ──────────────────────                        │
+│   command=/usr/libexec/rc-sandbox   rc_private_tmp="YES"                │
+│   command_args="<real binary>"      rc_protect_home="YES"               │
+│   supervisor=supervise-daemon       rc_protect_system="STRICT"          │
+│   name="<service> (sandboxed)"      rc_network_access="YES|NO"          │
+│                                      rc_unshare_pid="YES|NO"            │
+│                                      rc_capability_bounding_set="..."   │
+│                                      rc_seccomp_profile="lainos-*"      │
+│                                      rc_landlock_ro="path:path:..."     │
+│                                      rc_landlock_rw="path:path:..."     │
+│                                      rc_pids_max="N"                    │
+│                                      rc_memory_max="N"                  │
+│                                      rc_private_dev="YES|NO"            │
+└──────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                │ exec
+                                ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                    rc-sandbox  (Rust binary #1)                         │
+│                    /usr/libexec/rc-sandbox                              │
+│                                                                         │
+│  Reads conf.d settings → builds a bwrap invocation:                     │
+│    • --unshare-pid (conditional on rc_unshare_pid)                      │
+│    • --unshare-net (conditional on rc_network_access != YES)            │
+│    • --bind / /                                                         │
+│    • --tmpfs /tmp --tmpfs /home --tmpfs /root  (rc_private_tmp/home)    │
+│    • --ro-bind /usr /usr  --ro-bind /boot /boot                         │
+│    • --dev /dev  (conditional on rc_private_dev != NO)                  │
+│    • --cap-add ALL  (raw caps stay available for step 3 to narrow)      │
+│    • --setenv RC_SECCOMP_PROFILE / RC_LANDLOCK_RO / RC_LANDLOCK_RW /    │
+│                RC_CAPABILITY_BOUNDING_SET                               │
+│    • --die-with-parent                                                  │
+│    • cgroup-v2 setup: /sys/fs/cgroup/openrc.<service>                   │
+│         memory.max, pids.max                                            │
+└──────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                │ exec into bwrap
+                                ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                          bwrap (bubblewrap)                             │
+│                                                                         │
+│  Creates the actual namespaces + mount layout described above,          │
+│  then execs into the next binary inside the new sandbox.                │
+└──────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                │ exec
+                                ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│              lainos-sandbox-wrap  (Rust binary #2)                      │
+│              /usr/libexec/lainos-sandbox-wrap                           │
+│                                                                         │
+│  Runs INSIDE the new namespace, before the real service starts:         │
+│                                                                         │
+│   1. LANDLOCK                                                           │
+│      • fstat() each RO/RW path → file vs directory                      │
+│      • RO: READ_FILE (+READ_DIR if dir)                                 │
+│      • RW: READ_FILE+WRITE_FILE (+READ_DIR, MAKE_*, REMOVE_* if dir)    │
+│      • RO paths: ENOENT = hard fail (real misconfiguration)             │
+│      • RW paths: ENOENT = skip + warn (service creates its own file)    │
+│                                                                         │
+│   2. no_new_privs                                                       │
+│      • prctl(PR_SET_NO_NEW_PRIVS, 1)                                    │
+│                                                                         │
+│   3. CAPABILITIES                                                       │
+│      • read current Bounding set                                        │
+│      • drop everything NOT in rc_capability_bounding_set                │
+│      • narrow Effective + Permitted to the keep list                    │
+│      • (Inheritable left untouched — narrowing it broke some            │
+│         services' own internal capset() self-management)                │
+│                                                                         │
+│   4. SECCOMP-BPF                                                        │
+│      • resolve profile file, expand @include: directives                │
+│      • flat, sorted, deduplicated syscall allow-list                    │
+│      • content-addressed cache: /var/cache/lainos/seccomp/*.bpf         │
+│      • default action: KillProcess (Errno(EPERM) = debug-only toggle)   │
+│                                                                         │
+│   5. exec() the real service binary                                     │
+└──────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                │ exec
+                                ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                    Real service binary                                  │
+│         (unbound / dnsmasq / tor / dhcpcd / chrony / etc.)              │
+│                                                                         │
+│  Runs fully confined by everything above, PLUS an independent,          │
+│  pre-existing system-wide layer:                                        │
+│                                                                         │
+│   6. APPARMOR  (separate, orthogonal layer — not part of the            │
+│      rc-sandbox/lainos-sandbox-wrap pipeline at all)                    │
+│      /etc/apparmor.d/usr.bin.<service>                                  │
+│      • enforced independently of Landlock/seccomp/capabilities          │
+│      • acts as a real backstop when a Landlock/capability grant is      │
+│        deliberately widened (e.g. /run, /dev granted broadly)           │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+
+seccomp profile layering (lainos-base.list, lainos-network.list, etc.):
+
+  lainos-network.list
+  ├── @include:lainos-base   (must be explicit — no automatic inheritance)
+  └── + recvmmsg, sendmmsg, getsockname, socket, connect, bind, ...
+
+  lainos-base.list
+  └── execve, mmap, mprotect, futex, openat, read, write, close,
+      rt_sigaction, prctl, capget, capset, clone3, ... (grows per-service
+      as real gaps are found via unsandboxed census + sandboxed testing)
+```
 
 ### System Hardening
 - **AppArmor mandatory access control** ~ per-daemon profiles for the full stack: DNS chain (dnsmasq, unbound, dnscrypt-proxy), networking (tor, iwd, dhcpcd), media (pipewire, wireplumber, mpv, vlc), crypto (gpg, keepassxc), browsers (librewolf, Tor Browser), and system utilities. Loaded at boot before services start.
