@@ -1,6 +1,6 @@
 # lainOS layer 03 (Circuit VIII)
 
-> A systemd-free Gentoo-based Linux distribution built with OpenRC as PID 1, delivering compile-time hardening and native OpenRC service isolation (modeled on Kicksecure/Whonix systemd directives). Built upon the lainOS layer 02 foundation.
+> A systemd-free Gentoo-based Linux distribution built with OpenRC as PID 1, delivering compile-time hardening and native OpenRC service isolation (modeled on systemd directives featured in Kicksecure/Whonix). Built upon the lainOS layer 02 foundation.
 
 ## [lainOS layer 03 is developed at Forgejo](https://forgejo.lain.rocks/lainOS/lainOS-layer-03)
 
