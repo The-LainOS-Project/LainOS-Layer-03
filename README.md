@@ -65,7 +65,7 @@ Layer 02 required **Protocol 7** ~ a compatibility layer translating systemd ass
 
 OpenRC is the native init system. Every service ships its own init script. The boot chain is simpler, faster, and fully legible.
 
-### OpenRC Process Isolation
+### OpenRC Process Isolation (Rust)
 
 Implementation Repo: [openrc-isolation implementation](https://forgejo.lain.rocks/lainOS/lainOS-layer-03/src/branch/main/OpenRC-Service-Isolation.md)
 
@@ -166,8 +166,8 @@ BIOS/UEFI ~ GRUB ~ kernel + initramfs
 - **gnome-keyring** secrets service backend for Electron apps
 - **PipeWire** audio, bundled by default
 
-### Service Isolation
-- **Composed sandboxing** ~ bwrap (namespaces) + cgroup-v2 (resource limits) + seccomp-bpf (syscall filtering) + Landlock (path enforcement), stacked per service
+### Service Isolation (Rust)
+- **Modular sandboxing** ~ bwrap (namespaces) + cgroup-v2 (resource limits) + seccomp-bpf (syscall filtering) + Landlock (path enforcement), stacked per service
 - **Private tmpfs** per service (`rc_private_tmp`)
 - **Read-only system binds** (`rc_protect_system`)
 - **Capability bounding** ~ stripped to minimum required, dropped before the syscall filter loads (`rc_capability_bounding_set`)
