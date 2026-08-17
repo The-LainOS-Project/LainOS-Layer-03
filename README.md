@@ -2,6 +2,8 @@
 
 > A hardened, systemd-free Linux distribution built on Gentoo, with compile-time security policy enforcement, native OpenRC process isolation, and traffic-analysis resistance.
 
+## [lainOS layer 03 is developed at Forgejo](https://forgejo.lain.rocks/lainOS/lainOS-layer-03)
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Architecture](https://img.shields.io/badge/Arch-x86__64-blue)](https://gentoo.org)
 [![Init](https://img.shields.io/badge/Init-OpenRC-green)](https://github.com/OpenRC/openrc)
