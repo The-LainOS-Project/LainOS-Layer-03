@@ -784,37 +784,225 @@ If an Electron app reports a keyring backend mismatch, it was launched with diff
 ## Project Structure
 
 ```
-lainos-layer03/
-├── build-lainos.sh              # Main ISO build script (catalyst wrapper)
-├── overlay/                     # ::lainos Portage overlay
-│   ├── app-lainos/              # Custom lainOS packages
-│   │   ├── lainos-utils/        # Utility scripts (wifi, wscan, lainos-dns, etc.)
-│   │   ├── lainos-ram-wipe/     # RAM wipe on shutdown
-│   │   ├── lainos-hardened-malloc/ # GrapheneOS hardened_malloc wrapper
-│   │   ├── lainos-keyring/      # Project signing keys
-│   │   ├── lainos-apparmor/     # AppArmor profiles + OpenRC loader
-│   │   ├── lainos-calamares-config/ # Calamares installer configuration
-│   │   ├── lainos-calamares-dracut/ # Calamares + dracut integration
-│   │   ├── lainos-kernel-backup/ # Kernel backup utility
-│   │   ├── lainos-desktop/      # Desktop metapackage (all core packages)
-│   │   ├── lainos-rescue/       # Rescue/diagnostic tools metapackage
-│   │   ├── openrc-isolation/    # OpenRC service isolation stack (rc-sandbox,
-│   │   │                       # lainos-sandbox-wrap, seccomp profiles,
-│   │   │                       # openrc-security-status)
-│   │   ├── sdwdate/             # Tor-based secure time sync (Whonix port)
-│   │   ├── bootclockrandomization/ # Boot-time clock jitter (Whonix port)
-│   │   ├── maybenot-tunnel/     # Traffic analysis resistance
-│   │   └── kloak/               # Keystroke anonymization
-│   ├── profiles/                # Portage profiles
-│   │   └── lainos/              # lainOS custom profile (USE flags, CFLAGS)
-│   └── metadata/                # Overlay metadata (layout.conf, etc.)
-├── iso-profile/                 # ISO assembly configuration
-│   ├── grub.cfg                 # GRUB bootloader config for live ISO
-│   └── ...
-├── scripts/                     # Helper scripts
-└── docs/                        # Specifications and design documents
-    ├── openrc-isolation.md      # OpenRC service isolation design doc
-    └── ...
+lainos-iso-layer-03-catalyst
+.
+├── .forgejo
+│   └── workflows
+│       └── validate-overlay.yml
+├── LICENSE
+├── README.md
+├── VERSION
+├── build
+│   └── build.conf
+├── catalyst
+│   ├── make.conf
+│   ├── stage1.spec
+│   └── stage3.spec
+├── docs
+│   ├── architecture
+│   │   ├── boot.md
+│   │   ├── dns-mediation-architecture.md
+│   │   ├── networking.md
+│   │   ├── openrc-isolation.md
+│   │   └── threat-model.md
+│   ├── build.md
+│   ├── release.md
+│   └── testing.md
+├── iso
+│   ├── calamares
+│   │   ├── modules
+│   │   │   ├── bootloader.conf
+│   │   │   ├── partition.conf
+│   │   │   └── unpackfs.conf
+│   │   └── settings.conf
+│   ├── dracut
+│   │   └── dracut.conf.d
+│   │       └── 99-lainos.conf
+│   └── grub
+│       └── grub.cfg
+├── overlay
+│   ├── app-lainos
+│   │   ├── bootclockrandomization
+│   │   │   └── bootclockrandomization-9999.ebuild
+│   │   ├── kloak
+│   │   │   └── kloak-9999.ebuild
+│   │   ├── lainos-apparmor
+│   │   │   └── lainos-apparmor-9999.ebuild
+│   │   ├── lainos-calamares-config
+│   │   │   └── lainos-calamares-config-9999.ebuild
+│   │   ├── lainos-calamares-dracut
+│   │   │   └── lainos-calamares-dracut-9999.ebuild
+│   │   ├── lainos-desktop
+│   │   │   └── lainos-desktop-9999.ebuild
+│   │   ├── lainos-hardened-malloc
+│   │   │   └── lainos-hardened-malloc-9999.ebuild
+│   │   ├── lainos-kernel-backup
+│   │   │   └── lainos-kernel-backup-9999.ebuild
+│   │   ├── lainos-keyring
+│   │   │   └── lainos-keyring-9999.ebuild
+│   │   ├── lainos-ram-wipe
+│   │   │   └── lainos-ram-wipe-9999.ebuild
+│   │   ├── lainos-rescue
+│   │   │   └── lainos-rescue-9999.ebuild
+│   │   ├── lainos-utils
+│   │   │   └── lainos-utils-9999.ebuild
+│   │   ├── maybenot-tunnel
+│   │   │   └── maybenot-tunnel-9999.ebuild
+│   │   ├── openrc-isolation
+│   │   │   └── openrc-isolation-9999.ebuild
+│   │   └── sdwdate
+│   │       └── sdwdate-9999.ebuild
+│   ├── metadata
+│   │   └── layout.conf
+│   └── profiles
+│       └── lainos
+│           ├── make.defaults
+│           ├── package.mask
+│           ├── package.use
+│           ├── package.use.force
+│           ├── packages
+│           ├── parent
+│           └── use.mask
+├── rootfs-overlay
+│   ├── etc
+│   │   ├── acpi
+│   │   │   ├── events
+│   │   │   └── handlers
+│   │   ├── conf.d
+│   │   │   ├── dnsmasq
+│   │   │   └── tor
+│   │   ├── default
+│   │   │   └── grub
+│   │   ├── dhcpcd.conf
+│   │   ├── dnscrypt-proxy
+│   │   │   └── dnscrypt-proxy.toml
+│   │   ├── dnsmasq.conf
+│   │   ├── dnsmasq.conf.encrypted
+│   │   ├── dnsmasq.conf.plaintext
+│   │   ├── dnsmasq.conf.private
+│   │   ├── doas
+│   │   │   └── doas.conf
+│   │   ├── doas.conf
+│   │   ├── dracut.conf.d
+│   │   ├── fonts
+│   │   │   └── conf.d
+│   │   ├── greetd
+│   │   │   ├── config.toml
+│   │   │   └── config.toml.lainos-default
+│   │   ├── group
+│   │   ├── gtk-3.0
+│   │   │   └── settings.ini
+│   │   ├── hostname
+│   │   ├── init.d
+│   │   │   ├── dbus
+│   │   │   ├── dnscrypt-proxy
+│   │   │   ├── dnsmasq
+│   │   │   ├── lainos-dns-setup
+│   │   │   ├── lainos-live-keyring
+│   │   │   ├── lainos-machine-id
+│   │   │   ├── lainos-wifi-dns
+│   │   │   ├── polkit
+│   │   │   ├── resolvconf
+│   │   │   ├── rfkill-unblock
+│   │   │   └── unbound
+│   │   ├── iwd
+│   │   │   └── main.conf
+│   │   ├── locale.conf
+│   │   ├── localtime -> /usr/share/zoneinfo/UTC
+│   │   ├── machine-id
+│   │   ├── modprobe.d
+│   │   │   └── broadcom-wl.conf
+│   │   ├── motd
+│   │   ├── os-release
+│   │   ├── pam.d
+│   │   │   ├── greetd
+│   │   │   ├── login
+│   │   │   └── swaylock
+│   │   ├── passwd
+│   │   ├── profile.d
+│   │   │   └── lainos-runtime-dir.sh
+│   │   ├── resolv.conf -> /run/resolvconf/resolv.conf
+│   │   ├── resolv.dnsmasq
+│   │   ├── resolvconf.conf
+│   │   ├── runlevels
+│   │   │   ├── boot
+│   │   │   ├── default
+│   │   │   └── sysinit
+│   │   ├── shadow
+│   │   ├── skel
+│   │   │   ├── .Xresources
+│   │   │   ├── .aliases
+│   │   │   ├── .bash_logout
+│   │   │   ├── .bash_profile
+│   │   │   ├── .bashrc
+│   │   │   ├── .config
+│   │   │   ├── .gnupg
+│   │   │   ├── .gtkrc-2.0
+│   │   │   ├── .local
+│   │   │   ├── .p10k.zsh
+│   │   │   ├── .p10k.zsh.bak-20260712084033
+│   │   │   ├── .p10k.zsh.save
+│   │   │   ├── .zshrc
+│   │   │   ├── Snowflake-Bridges-for-Tor-Browser.txt
+│   │   │   ├── apparmor-test.sh
+│   │   │   ├── lainos-wallpapers.sh
+│   │   │   ├── libreboot_thinkpad_fan.sh
+│   │   │   ├── no-sleep-till-brooklyn.sh
+│   │   │   └── rfkill-unblock
+│   │   ├── ssh
+│   │   │   └── sshd_config.d
+│   │   ├── stubby
+│   │   │   └── stubby.yml
+│   │   ├── sysctl.d
+│   │   │   └── 99-lainos-hardening.conf
+│   │   ├── syslog-ng
+│   │   │   └── syslog-ng.conf
+│   │   ├── tor
+│   │   │   └── torrc
+│   │   ├── unbound
+│   │   │   └── unbound.conf
+│   │   └── xdg
+│   │       └── openbox
+│   └── usr
+│       ├── bin
+│       │   └── dmsquash-live-root
+│       └── share
+│           ├── LainOS
+│           ├── applications
+│           ├── dbus-1
+│           ├── fonts
+│           ├── gitstatus
+│           ├── glib-2.0
+│           ├── grub
+│           ├── icons
+│           ├── lainos
+│           ├── plymouth
+│           ├── themes
+│           └── wayland-sessions
+├── scripts
+│   ├── 00-build-stage3.sh
+│   ├── 10-prepare-chroot.sh
+│   ├── 20-build-rootfs.sh
+│   ├── 30-build-squashfs.sh
+│   ├── 40-build-iso.sh
+│   ├── 50-hash-iso.sh
+│   ├── 60-verify-build.sh
+│   └── build-lainos.sh
+└── tests
+    ├── dns
+    │   └── README.md
+    ├── installer
+    │   └── README.md
+    ├── isolation
+    │   └── README.md
+    ├── live
+    │   └── README.md
+    ├── packages
+    │   └── README.md
+    └── profile
+        └── README.md
+
+94 directories, 122 files
 ```
 
 ---
