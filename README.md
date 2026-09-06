@@ -121,13 +121,27 @@ The SquashFS is the installation payload only. Once deployed to disk, the system
 ### Boot Chain
 
 ```
-BIOS/UEFI ~ GRUB ~ kernel + initramfs
-  ~ Dracut: dmsquash-live mounts squashfs, execs /sbin/openrc-init
-     ~ OpenRC sysinit: dbus, machine-id
-        ~ OpenRC boot: cgroup-delegate, syslog-ng
-           ~ OpenRC default: seatd, greetd, chrony, nftables, acpid
-              ~ greetd ~ tuigreet ~ Sway session
-                 ~ Sway ~ lainos-utils ~ user session
+Firmware (BIOS/Libreboot or UEFI)
+  → GRUB (i386-pc or x86_64-efi target)
+    → kernel + dracut initramfs (mounts real root, loads drivers)
+      → switch_root → openrc-init (PID 1)
+openrc-init
+  → sysinit: dbus, lainos-machine-id
+  → boot: syslog-ng, cgroup-delegate lainos-apparmor
+  → default:
+      dhcpcd → dnsmasq → unbound → dnscrypt-proxy → tor   (all rc-sandbox/bwrap-isolated)
+      acpid, chrony/sdwdate                               (rc-sandbox/bwrap-isolated)
+      iwd
+      seatd, nftables, polkit                            (NOT bwrap-isolated — rfkill needs real /dev)
+      greetd → tuigreet (login prompt)
+tuigreet (after login)
+  → lainos-session-sway (C binary)
+      sets GSETTINGS_BACKEND=keyfile, XDG_RUNTIME_DIR, XDG_CURRENT_DESKTOP=sway
+      lainos-apply-theme (first login only)
+      → dbus-run-session -- lainos-init (C binary)
+          sets LIBSEAT_BACKEND=seatd, SHELL=<pw_shell>, preserves a whitelisted
+          env subset, selects compositor
+          → sway (Wayland compositor) → user's bar/terminal/apps
 ```
 
 `iwd` is intentionally **not** in this default startup chain ~ WiFi stays off until you deliberately turn it on.
