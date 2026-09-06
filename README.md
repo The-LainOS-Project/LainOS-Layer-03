@@ -617,7 +617,6 @@ All custom packages are maintained in the `::lainos` overlay. The overlay contai
 | `openrc-isolation` | OpenRC service isolation stack (`rc-sandbox`, `lainos-sandbox-wrap`, seccomp profiles, `openrc-security-status`) |
 | `sdwdate` | Tor-based secure time sync (Whonix port) |
 | `bootclockrandomization` | Boot-time clock jitter (Whonix port) |
-| `maybenot-tunnel` | Traffic analysis resistance |
 | `kloak` | Keystroke anonymization |
 
 ### Deploying packages to the overlay
@@ -662,7 +661,6 @@ Follow the installer wizard. To enable full disk encryption, select **Encrypt sy
 - Lid close: automatically locks screen with swaylock and suspends
 - Audio: PipeWire is bundled by default
 - Time sync: `chrony` (plaintext NTP) is the default; `sdwdate` (Tor-based) is installed but not enabled ~ toggle with `lainos-sdwdate enable`
-- Traffic shaping: `maybenot-tunnel` is available but not enabled by default ~ toggle with `maybenot-tunnel enable`
 - A short quick-start guide (`lainos-quickstart-help`) opens automatically the first time a new user opens a terminal; the full guide (`lainos-help`) is always available
 
 ---
@@ -846,7 +844,6 @@ A set of utility scripts included with lainOS Layer 03:
 | ram-wipe | `ram-wipe {enable\|disable\|status}` | Toggle shutdown RAM wipe |
 | kloak | `kloak` | Keystroke anonymization |
 | lainos-dns | `lainos-dns {plaintext\|encrypted\|private\|status}` | DNS mode toggle |
-| maybenot-tunnel | `maybenot-tunnel {enable\|disable\|status}` | Traffic analysis resistance |
 | lainos-hardened-malloc | `lainos-hardened-malloc {enable\|disable\|status}` | Toggle system-wide |
 | lainos-help | `lainos-help` | Open user guide |
 | lainos-privacy-help | `lainos-privacy-help` | Privacy guide for sensitive sessions |
@@ -955,8 +952,8 @@ lainos-iso-layer-03-catalyst
 │   │   │   └── lainos-rescue-9999.ebuild
 │   │   ├── lainos-utils
 │   │   │   └── lainos-utils-9999.ebuild
-│   │   ├── maybenot-tunnel
-│   │   │   └── maybenot-tunnel-9999.ebuild
+│   │   
+│   │   │   
 │   │   ├── openrc-isolation
 │   │   │   └── openrc-isolation-9999.ebuild
 │   │   └── sdwdate
