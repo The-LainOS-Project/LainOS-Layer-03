@@ -8,6 +8,27 @@
 [![Architecture](https://img.shields.io/badge/Arch-x86__64-blue)](https://gentoo.org)
 [![Init](https://img.shields.io/badge/Init-OpenRC-green)](https://github.com/OpenRC/openrc)
 
+<!--Reddit-->
+<a href="https://www.reddit.com/r/LainOSdevelopers/" target="_blank">
+  <img align="top" src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Reddit">
+</a>
+<!--Matrix-->
+<a href="https://matrix.to/#/#lainos:catgirl.cloud" target="_blank">
+  <img align="top" src="https://img.shields.io/badge/Matrix%20-%20%230047a7?style=for-the-badge&logo=matrix" alt="Matrix">
+</a>
+<!--Discord-->
+<a href="https://discord.gg/JdMQvkHqwH" target="_blank">
+  <img align="top" src="https://img.shields.io/badge/Discord%20-%20%234900ff?style=for-the-badge&logo=discord" alt="Discord">
+</a>
+<!--Web page-->
+<a href="https://lainos.net" target="_blank">
+  <img align="top" src="https://img.shields.io/badge/Lain%20OS%20web-3d3b93?style=for-the-badge&logo=Devbox" alt="Web">
+</a>
+<!--Forgejo-->
+<a href="https://forgejo.lain.rocks/lainOS" target="_blank">
+  <img align="top" src="https://img.shields.io/badge/Forgejo-ff6600?style=for-the-badge&logo=forgejo&logoColor=white" alt="Forgejo">
+</a>
+
 ---
 
 ## Table of Contents
